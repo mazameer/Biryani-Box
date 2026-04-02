@@ -32,17 +32,22 @@ export default function Hero() {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % slides.length);
     }, 4000);
-
     return () => clearInterval(interval);
   }, []);
 
   const current = slides[index];
 
   return (
-    <div className="relative h-[90vh] bg-black text-white overflow-hidden flex items-center px-16">
+    <div className="relative h-[90vh] text-white overflow-hidden flex items-center px-16">
 
-      {/* BACKGROUND GRADIENT */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-0"></div>
+      {/* 🔥 FULL BACKGROUND IMAGE */}
+      <img
+        src={current.image}
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      />
+
+      {/* 🔥 DARK OVERLAY (for readability) */}
+      <div className="absolute inset-0 bg-black/60 z-0"></div>
 
       {/* LEFT CONTENT */}
       <motion.div
@@ -63,7 +68,7 @@ export default function Hero() {
           </span>
         </h1>
 
-        <p className="mt-5 text-gray-300 w-[400px]">
+        <p className="mt-5 text-gray-200 w-[400px]">
           {current.desc}
         </p>
 
@@ -72,33 +77,21 @@ export default function Hero() {
             Order Online
           </button>
 
-          <button className="bg-gray-800 px-6 py-3 rounded-lg text-lg">
+          <button className="bg-gray-800/80 px-6 py-3 rounded-lg text-lg">
             View Menu
           </button>
         </div>
       </motion.div>
 
-      {/* RIGHT IMAGE */}
-      <motion.div
-        key={current.image}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8 }}
-        className="w-1/2 flex justify-center z-10"
-      >
-        <img
-          src={current.image}
-          className="w-[450px] h-[450px] object-cover rounded-xl shadow-2xl"
-        />
-      </motion.div>
+      {/* RIGHT SIDE (optional — removed separate image since bg is used) */}
 
       {/* DOTS */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3">
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-10">
         {slides.map((_, i) => (
           <div
             key={i}
             className={`w-3 h-3 rounded-full ${
-              i === index ? "bg-orange-500" : "bg-gray-500"
+              i === index ? "bg-orange-500" : "bg-gray-400"
             }`}
           ></div>
         ))}
