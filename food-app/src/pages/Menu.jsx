@@ -4,16 +4,13 @@ import Navbar from "../components/Navbar";
 export default function Menu() {
   const [menuData, setMenuData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
-
-  // ✅ FIX: fallback role (IMPORTANT)
-  const role = localStorage.getItem("role") || "admin";
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [customTime, setCustomTime] = useState("");
 
   useEffect(() => {
     fetch("http://localhost:5000/dish")
       .then(res => res.json())
       .then(data => {
-        if (!data || data.length === 0) return;
-
         const grouped = Object.values(
           data.reduce((acc, item) => {
             if (!acc[item.category]) {
@@ -22,58 +19,62 @@ export default function Menu() {
                 items: [],
               };
             }
-            acc[item.category].items.push(item);
+            acc[item.category].items.push({
+              ...item,
+              outUntil: null,
+            });
             return acc;
           }, {})
         );
-
         setMenuData(grouped);
-      })
-      .catch(err => console.error(err));
+      });
   }, []);
 
-  const toggleStock = async (id) => {
-    try {
-      await fetch(`http://localhost:5000/dish/${id}/toggle`, {
-        method: "PUT",
-      });
+  const setOutOfStock = (item, hours) => {
+    const time = new Date();
+    time.setHours(time.getHours() + hours);
 
-      setMenuData(prev =>
-        prev.map(cat => ({
-          ...cat,
-          items: cat.items.map(item =>
-            item._id === id
-              ? { ...item, inStock: !item.inStock }
-              : item
-          ),
-        }))
-      );
+    updateItem(item._id, time);
+  };
 
-      if (selectedItem && selectedItem._id === id) {
-        setSelectedItem(prev => ({
-          ...prev,
-          inStock: !prev.inStock,
-        }));
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const setCustomOut = (item) => {
+    if (!customTime) return;
+    updateItem(item._id, new Date(customTime));
+  };
+
+  const updateItem = (id, time) => {
+    setMenuData(prev =>
+      prev.map(cat => ({
+        ...cat,
+        items: cat.items.map(i =>
+          i._id === id ? { ...i, outUntil: time } : i
+        ),
+      }))
+    );
+
+    setDrawerOpen(false);
+    setSelectedItem(null);
+  };
+
+  const isOut = (item) => {
+    if (!item.outUntil) return false;
+    return new Date(item.outUntil) > new Date();
   };
 
   return (
     <>
       <Navbar />
 
-      <div className="flex">
+      <div className="flex bg-black text-white min-h-screen">
 
         {/* LEFT SIDEBAR */}
-        <div className="w-1/4 p-6 border-r bg-gray-50 sticky top-0 h-screen">
-          <h2 className="text-xl font-bold mb-4">Menu</h2>
+        <div className="w-1/5 p-6 border-r border-gray-800 sticky top-0 h-screen">
+          <h2 className="text-xl font-bold mb-6">Categories</h2>
 
           {menuData.map((cat, i) => (
             <div
               key={i}
-              className="cursor-pointer mb-2 hover:text-orange-500"
+              className="mb-3 cursor-pointer hover:text-orange-400"
               onClick={() =>
                 document.getElementById(cat.category)?.scrollIntoView({
                   behavior: "smooth",
@@ -86,110 +87,146 @@ export default function Menu() {
         </div>
 
         {/* RIGHT CONTENT */}
-        <div className="w-3/4 p-8">
+        <div className="w-4/5 p-10">
+
+          <h1 className="text-4xl font-bold mb-10">
+            Explore Our <span className="text-orange-500">Flavors</span>
+          </h1>
+
           {menuData.map((cat, i) => (
-            <div key={i} id={cat.category} className="mb-10">
-              <h2 className="text-2xl font-bold text-orange-500 mb-4">
+            <div key={i} id={cat.category} className="mb-12">
+
+              <h2 className="text-2xl text-orange-500 mb-6">
                 {cat.category}
               </h2>
 
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-8">
+
                 {cat.items.map(item => (
                   <div
                     key={item._id}
-                    className="bg-white p-4 shadow rounded cursor-pointer relative"
-                    onClick={() => setSelectedItem(item)}
+                    className="bg-[#1a1a1a] rounded-xl overflow-hidden shadow-lg hover:scale-105 transition duration-300"
                   >
                     <img
                       src={item.image}
-                      className="h-40 w-full object-cover rounded"
+                      className="h-56 w-full object-cover"
                     />
 
-                    {!item.inStock && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs rounded">
+                    <div className="p-4">
+
+                      <h3 className="text-lg font-bold">
+                        {item.name}
+                      </h3>
+
+                      <p className="text-orange-400 font-semibold mt-2">
+                        ₹{item.price}
+                      </p>
+
+                      {/* STATUS */}
+                      <p className="mt-2 text-sm">
+                        Status:{" "}
+                        {isOut(item) ? (
+                          <span className="text-red-500">
+                            Unavailable
+                          </span>
+                        ) : (
+                          <span className="text-green-500">
+                            Available
+                          </span>
+                        )}
+                      </p>
+
+                      {/* BUTTON */}
+                      <button
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setDrawerOpen(true);
+                        }}
+                        className="mt-4 w-full bg-red-600 py-2 rounded-lg"
+                      >
                         Out of Stock
-                      </div>
-                    )}
+                      </button>
 
-                    {/* ✅ FIXED BUTTON POSITION */}
-                    <div className="mt-3 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-bold">{item.name}</h3>
-                        <p className="text-orange-500 font-semibold">
-                          ₹{item.price}
-                        </p>
-                      </div>
-
-                      {(role === "chef" || role === "admin") && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleStock(item._id);
-                          }}
-                          className={`px-3 py-1 text-sm rounded text-white ${
-                            item.inStock
-                              ? "bg-green-600"
-                              : "bg-red-600"
-                          }`}
-                        >
-                          {item.inStock ? "In" : "Out"}
-                        </button>
-                      )}
                     </div>
                   </div>
                 ))}
+
               </div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* MODAL */}
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl w-96 relative">
+        {/* RIGHT DRAWER */}
+        <div
+          className={`fixed top-0 right-0 h-full w-80 bg-[#111] p-6 shadow-lg transform transition-transform duration-300 ${
+            drawerOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          {selectedItem && (
+            <>
+              <h2 className="text-xl font-bold mb-4">
+                Set Out of Stock
+              </h2>
 
-            <button
-              onClick={() => setSelectedItem(null)}
-              className="absolute top-2 right-2 text-xl"
-            >
-              ✕
-            </button>
+              <div className="flex flex-col gap-3">
 
-            <img
-              src={selectedItem.image}
-              className="h-48 w-full object-cover rounded"
-            />
+                <button
+                  onClick={() => setOutOfStock(selectedItem, 1)}
+                  className="bg-gray-800 p-2 rounded"
+                >
+                  1 Hour
+                </button>
 
-            <h2 className="text-xl font-bold mt-3">
-              {selectedItem.name}
-            </h2>
+                <button
+                  onClick={() => setOutOfStock(selectedItem, 3)}
+                  className="bg-gray-800 p-2 rounded"
+                >
+                  3 Hours
+                </button>
 
-            <p className="text-orange-500 font-bold">
-              ₹{selectedItem.price}
-            </p>
+                <button
+                  onClick={() => setOutOfStock(selectedItem, 12)}
+                  className="bg-gray-800 p-2 rounded"
+                >
+                  12 Hours
+                </button>
 
-            {!selectedItem.inStock && (
-              <p className="text-red-500 font-bold mt-2">
-                Currently Out of Stock
-              </p>
-            )}
+                <button
+                  onClick={() => setOutOfStock(selectedItem, 24)}
+                  className="bg-gray-800 p-2 rounded"
+                >
+                  24 Hours
+                </button>
 
-            {(role === "chef" || role === "admin") && (
-              <button
-                onClick={() => toggleStock(selectedItem._id)}
-                className="mt-3 w-full bg-red-500 text-white py-2 rounded"
-              >
-                Toggle Stock
-              </button>
-            )}
+                {/* CUSTOM */}
+                <div className="mt-4">
+                  <input
+                    type="datetime-local"
+                    className="w-full p-2 bg-gray-800 rounded"
+                    onChange={(e) => setCustomTime(e.target.value)}
+                  />
 
-            <button className="mt-4 w-full bg-orange-500 text-white py-2 rounded">
-              Add to Cart
-            </button>
-          </div>
+                  <button
+                    onClick={() => setCustomOut(selectedItem)}
+                    className="mt-2 w-full bg-orange-500 py-2 rounded"
+                  >
+                    Set Custom
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="mt-6 text-red-500"
+                >
+                  Close
+                </button>
+
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+      </div>
     </>
   );
 }

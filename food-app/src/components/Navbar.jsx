@@ -1,29 +1,27 @@
-import { Link, useNavigate } from "react-router-dom";
-
 export default function Navbar() {
-  const navigate = useNavigate();
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+    });
+  };
 
   return (
-    <div className="flex justify-between items-center px-8 py-4 shadow-md">
-      <h1 className="text-xl font-bold text-orange-500">Biryani Box</h1>
+    <nav className="bg-black text-white px-10 py-5 flex justify-between items-center sticky top-0 z-50">
 
-      <div className="flex gap-6">
-        <Link to="/">Home</Link>
-        <Link to="/menu">Menu</Link>
+      <h1 className="text-2xl font-bold text-orange-500">
+        Biryani Box
+      </h1>
+
+      <div className="flex gap-10 text-gray-300">
+        <button onClick={() => scrollTo("home")}>Home</button>
+        <button onClick={() => scrollTo("menu")}>Menu</button>
       </div>
 
-      <div className="flex gap-4">
-        <button className="bg-orange-500 text-white px-4 py-2 rounded-lg">
-          Order Online
-        </button>
+      <button className="bg-orange-500 px-5 py-2 rounded-lg">
+        Order Online
+      </button>
 
-        <button
-          onClick={() => navigate("/login")}
-          className="border px-4 py-2 rounded-lg"
-        >
-          Login
-        </button>
-      </div>
-    </div>
+    </nav>
   );
 }

@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 
 function App() {
   return (
+    <div className="bg-black min-h-screen text-white">
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -12,6 +13,7 @@ function App() {
         <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
+    </div>
   );
 }
 
